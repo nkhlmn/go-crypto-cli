@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"os"
 
 	prompt "github.com/c-bata/go-prompt"
 	gecko "github.com/superoo7/go-gecko/v3"
-	"github.com/superoo7/go-gecko/v3/types"
+	geckoTypes "github.com/superoo7/go-gecko/v3/types"
+	table "github.com/jedib0t/go-pretty/v6/table"
+	text "github.com/jedib0t/go-pretty/v6/text"
 )
 
-func getCoinsList(client *gecko.Client) types.CoinList {
+func getCoinsList(client *gecko.Client) geckoTypes.CoinList {
 	coinsList, err := client.CoinsList()
 	if err != nil {
 		log.Fatal(err)
@@ -19,7 +22,7 @@ func getCoinsList(client *gecko.Client) types.CoinList {
 	return *coinsList
 }
 
-func getCurrencyList(client *gecko.Client) types.SimpleSupportedVSCurrencies {
+func getCurrencyList(client *gecko.Client) geckoTypes.SimpleSupportedVSCurrencies {
 	currencyList, err := client.SimpleSupportedVSCurrencies()
 	if err != nil {
 		log.Fatal(err)
@@ -27,7 +30,7 @@ func getCurrencyList(client *gecko.Client) types.SimpleSupportedVSCurrencies {
 	return *currencyList
 }
 
-func getCoinSuggestions(coinsList types.CoinList) []prompt.Suggest {
+func getCoinSuggestions(coinsList geckoTypes.CoinList) []prompt.Suggest {
 	suggestionsById := make([]prompt.Suggest, len(coinsList))
 	for i, val := range coinsList {
 		item := prompt.Suggest{
@@ -49,7 +52,7 @@ func getCoinSuggestions(coinsList types.CoinList) []prompt.Suggest {
 	return append(suggestionsById, suggestionsBySymbol...)
 }
 
-func getCurrencySuggestions(currencyList types.SimpleSupportedVSCurrencies) []prompt.Suggest {
+func getCurrencySuggestions(currencyList geckoTypes.SimpleSupportedVSCurrencies) []prompt.Suggest {
 	suggestions := make([]prompt.Suggest, len(currencyList))
 	for i, val := range currencyList {
 		item := prompt.Suggest{
@@ -61,28 +64,31 @@ func getCurrencySuggestions(currencyList types.SimpleSupportedVSCurrencies) []pr
 	return suggestions
 }
 
-func getCoin(id string) (*types.CoinsID, error) {
+func getCoin(id string) (*geckoTypes.CoinsID, error) {
 	cg := gecko.NewClient(nil)
 	coin, err := cg.CoinsID(id, false, true, true, false, false, false)
 	return coin, err
 }
 
-func getCoinBySymbol(symbol string) (*types.CoinsID, error) {
+func getCoinBySymbol(symbol string) (*geckoTypes.CoinsID, error) {
 	symbol = strings.ToLower(symbol)
 	client := gecko.NewClient(nil)
 	coinsList := getCoinsList(client)
-	var coin *types.CoinsID = nil
-	var id string = ""
+	var coin *geckoTypes.CoinsID = nil
 
+	var id string = ""
 	switch symbol {
 	case "dot":
 		id = "polkadot"
 	case "eth":
 		id = "ethereum"
+	case "sol":
+		id = "solana"
 	default:
 		for _, val := range coinsList {
 			if val.Symbol == symbol {
 				id = val.ID
+				break
 			}
 		}
 	}
@@ -98,14 +104,18 @@ func getCoinBySymbol(symbol string) (*types.CoinsID, error) {
 	return coin, errors.New(errorMsg)
 }
 
-func printPrices(currency string, coin *types.CoinsID) {
+func printPrices(currency string, coin *geckoTypes.CoinsID) {
 	if coin != nil && *coin.Tickers != nil {
+		t := table.NewWriter()
+		t.SetStyle(table.StyleLight)
+		t.SetOutputMirror(os.Stdout)
+		t.AppendHeader(table.Row{text.FgHiWhite.Sprint("Exchange"), text.FgHiWhite.Sprintf("Price (%s)", currency)})
 		fmt.Println(coin.ID, currency)
 		for _, val := range *coin.Tickers {
 			if strings.ToUpper(val.Target) == currency || val.Base == currency {
-				displayString := fmt.Sprintf("  %s: %f", val.Market.Name, val.Last)
-				fmt.Println(displayString)
+				t.AppendRow(table.Row{val.Market.Name, val.Last})
 			}
 		}
+		t.Render()
 	}
 }
