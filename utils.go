@@ -11,7 +11,6 @@ import (
 	gecko "github.com/superoo7/go-gecko/v3"
 	geckoTypes "github.com/superoo7/go-gecko/v3/types"
 	table "github.com/jedib0t/go-pretty/v6/table"
-	text "github.com/jedib0t/go-pretty/v6/text"
 )
 
 func getCoinsList(client *gecko.Client) geckoTypes.CoinList {
@@ -76,27 +75,13 @@ func getCoinBySymbol(symbol string) (*geckoTypes.CoinsID, error) {
 	coinsList := getCoinsList(client)
 	var coin *geckoTypes.CoinsID = nil
 
-	var id string = ""
-	switch symbol {
-	case "dot":
-		id = "polkadot"
-	case "eth":
-		id = "ethereum"
-	case "sol":
-		id = "solana"
-	default:
-		for _, val := range coinsList {
-			if val.Symbol == symbol {
-				id = val.ID
-				break
+	for _, val := range coinsList {
+		if val.Symbol == symbol && !strings.HasPrefix(val.ID, "binance-peg") {
+			// Found coin; get and return data
+			coin, err := getCoin(val.ID)
+			if err == nil {
+				return coin, nil
 			}
-		}
-	}
-
-	if id != "" {
-		coin, err := getCoin(id)
-		if err == nil {
-			return coin, nil
 		}
 	}
 
@@ -107,9 +92,9 @@ func getCoinBySymbol(symbol string) (*geckoTypes.CoinsID, error) {
 func printPrices(currency string, coin *geckoTypes.CoinsID) {
 	if coin != nil && *coin.Tickers != nil {
 		t := table.NewWriter()
-		t.SetStyle(table.StyleLight)
+		t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
 		t.SetOutputMirror(os.Stdout)
-		t.AppendHeader(table.Row{text.FgHiWhite.Sprint("Exchange"), text.FgHiWhite.Sprintf("Price (%s)", currency)})
+		t.AppendHeader(table.Row{"Exchange", fmt.Sprintf("Price (%s)", currency)})
 		fmt.Println(coin.ID, currency)
 		for _, val := range *coin.Tickers {
 			if strings.ToUpper(val.Target) == currency || val.Base == currency {
