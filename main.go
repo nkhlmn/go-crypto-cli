@@ -16,24 +16,30 @@ var currencySuggestions = getCurrencySuggestions(currencyList)
 
 func executor(input string) {
 	input = strings.TrimSpace(input)
+	if input == "" {
+		return
+	}
+
 	args := strings.Split(input, " ")
 
 	coinId := args[0]
 
-	currency := "USD"
+	currencies := []string{"USD", "EUR"}
 	if len(args) > 1 {
-		currency = strings.ToUpper(args[1])
+		currencyArgString := args[1]
+		currencyArgs := strings.Split(strings.ToUpper(currencyArgString), ",")
+		currencies = currencyArgs
 	}
 
 	coin, err := getCoin(coinId)
 	if err != nil {
 		coin, err := getCoinBySymbol(coinId)
-		printPrices(currency, coin)
+		printPrices(currencies, coin)
 		if err != nil || coin == nil {
 			fmt.Println("Error getting coin with ID of ", input)
 		}
 	} else {
-		printPrices(currency, coin)
+		printPrices(currencies, coin)
 	}
 }
 

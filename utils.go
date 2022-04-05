@@ -11,6 +11,7 @@ import (
 	gecko "github.com/superoo7/go-gecko/v3"
 	geckoTypes "github.com/superoo7/go-gecko/v3/types"
 	table "github.com/jedib0t/go-pretty/v6/table"
+	humanize "github.com/dustin/go-humanize"
 )
 
 func getCoinsList(client *gecko.Client) geckoTypes.CoinList {
@@ -89,18 +90,95 @@ func getCoinBySymbol(symbol string) (*geckoTypes.CoinsID, error) {
 	return coin, errors.New(errorMsg)
 }
 
-func printPrices(currency string, coin *geckoTypes.CoinsID) {
+func printCoinStats(coin *geckoTypes.CoinsID) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+
+	t.AppendRows([]table.Row{
+		{
+			fmt.Sprintf("ID: %v", coin.ID),
+			fmt.Sprintf("Name: %v", coin.Name),
+			fmt.Sprintf("Symbol: %v", coin.Symbol),
+			fmt.Sprintf("MarketCapRank: %v", coin.MarketCapRank),
+		},
+	})
+
+	t.SetStyle(table.StyleLight)
+	t.Style().Options.SeparateColumns = true
+	t.Style().Options.SeparateRows = true
+
+	t.Render()
+}
+
+func printPrices(currencies []string, coin *geckoTypes.CoinsID) {
 	if coin != nil && *coin.Tickers != nil {
+		printCoinStats(coin)
+		fmt.Println()
 		t := table.NewWriter()
 		t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
 		t.SetOutputMirror(os.Stdout)
-		t.AppendHeader(table.Row{"Exchange", fmt.Sprintf("Price (%s)", currency)})
-		fmt.Println(coin.ID, currency)
-		for _, val := range *coin.Tickers {
-			if strings.ToUpper(val.Target) == currency || val.Base == currency {
-				t.AppendRow(table.Row{val.Market.Name, val.Last})
+
+		var priceData = map[string]map[string]string{}
+		for _, ticker := range *coin.Tickers {
+			for _, currency := range currencies {
+				key := ""
+				if strings.ToUpper(ticker.Base) == currency {
+					key = strings.ToUpper(ticker.Base)
+				} else if strings.ToUpper(ticker.Target) == currency {
+					key = strings.ToUpper(ticker.Target)
+				}
+				if key != "" {
+					if priceData[ticker.Market.Name] == nil {
+						priceData[ticker.Market.Name] = make(map[string]string)
+					}
+					priceData[ticker.Market.Name][currency] = getPriceDisplayString(ticker.Last, currency)
+				}
 			}
 		}
+
+		for k, v := range priceData {
+			rowData := make(table.Row, len(currencies) + 1)
+			rowData[0] = k
+			for i, currency := range currencies {
+				var val string
+				if price, ok := v[currency]; ok {
+					val = price
+				} else {
+					val = "-"
+				}
+				rowData[i + 1] = val
+			}
+			t.AppendRow(rowData)
+		}
+
+		// Add headers
+		headers := make(table.Row, len(currencies) + 1)
+		headers[0] = "Exchange"
+		for i, currency := range currencies {
+			headers[i + 1] = fmt.Sprintf("%s", currency)
+		}
+		t.AppendHeader(headers)
+
 		t.Render()
+	}
+}
+
+func getPriceDisplayString(price float64, currency string) string {
+	displayString := humanize.FormatFloat(getCurrencyFormatString(currency), price)
+	switch currency {
+	case "USD":
+		displayString = "$" + displayString
+	case "EUR":
+		displayString = "€" + displayString
+	}
+	return displayString
+}
+
+func getCurrencyFormatString(currency string) string{
+	switch currency {
+	case "BTC":
+		return "#,###.########"
+	default:
+		return "#,###.##"
 	}
 }
