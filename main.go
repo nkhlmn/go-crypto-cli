@@ -25,6 +25,9 @@ func executor(input string) {
 	coinId := args[0]
 
 	currencies := []string{"USD", "EUR"}
+	if coinId != "btc" && coinId != "bitcoin" {
+		currencies = append(currencies, "BTC")
+	}
 	if len(args) > 1 {
 		currencyArgString := args[1]
 		currencyArgs := strings.Split(strings.ToUpper(currencyArgString), ",")
