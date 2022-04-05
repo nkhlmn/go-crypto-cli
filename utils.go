@@ -151,6 +151,10 @@ func printPrices(currencies []string, coin *geckoTypes.CoinsID) {
 			t.AppendRow(rowData)
 		}
 
+		t.SortBy([]table.SortBy{
+			{Name: "Exchange", Mode: table.Asc},
+		})
+
 		// Add headers
 		headers := make(table.Row, len(currencies) + 1)
 		headers[0] = "Exchange"
