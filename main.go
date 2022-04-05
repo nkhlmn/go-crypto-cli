@@ -36,12 +36,20 @@ func executor(input string) {
 
 	coin, err := getCoin(coinId)
 	if err != nil {
+		// User may have entered coin by symbol; attempt to find a matching id
 		coin, err := getCoinBySymbol(coinId)
-		printPrices(currencies, coin)
 		if err != nil || coin == nil {
+			// Couldn't find a matching coin; probably incorrect input
 			fmt.Println("Error getting coin with ID of ", input)
+			return
+		} else {
+			// Found matching coin
+			printCoinStats(coin)
+			printPrices(currencies, coin)
 		}
 	} else {
+		// User entered a valid coin id
+		printCoinStats(coin)
 		printPrices(currencies, coin)
 	}
 }

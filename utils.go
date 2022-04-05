@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"os"
+	"strings"
 
 	prompt "github.com/c-bata/go-prompt"
 	gecko "github.com/superoo7/go-gecko/v3"
@@ -112,7 +112,6 @@ func printCoinStats(coin *geckoTypes.CoinsID) {
 
 func printPrices(currencies []string, coin *geckoTypes.CoinsID) {
 	if coin != nil && *coin.Tickers != nil {
-		printCoinStats(coin)
 		fmt.Println()
 		t := table.NewWriter()
 		t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
