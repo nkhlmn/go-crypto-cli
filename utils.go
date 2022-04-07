@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	prompt "github.com/c-bata/go-prompt"
+	humanize "github.com/dustin/go-humanize"
+	table "github.com/jedib0t/go-pretty/v6/table"
 	gecko "github.com/superoo7/go-gecko/v3"
 	geckoTypes "github.com/superoo7/go-gecko/v3/types"
-	table "github.com/jedib0t/go-pretty/v6/table"
-	humanize "github.com/dustin/go-humanize"
 )
 
 func getCoinsList(client *gecko.Client) geckoTypes.CoinList {
