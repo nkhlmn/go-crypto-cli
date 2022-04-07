@@ -1,4 +1,4 @@
-module crypto-cli
+module go-crypto-cli
 
 go 1.17
 
