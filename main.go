@@ -17,40 +17,42 @@ var currencySuggestions = getCurrencySuggestions(currencyList)
 func executor(input string) {
 	input = strings.TrimSpace(input)
 	if input == "" {
-		return
-	}
+		globalData := getGlobalData(geckoClient)
+		printGlobalData(globalData)
+	} else {
+		// Handle price commands
+		args := strings.Split(input, " ")
 
-	args := strings.Split(input, " ")
+		coinId := args[0]
 
-	coinId := args[0]
+		currencies := []string{"USD", "EUR"}
+		if coinId != "btc" && coinId != "bitcoin" {
+			currencies = append(currencies, "BTC")
+		}
+		if len(args) > 1 {
+			currencyArgString := args[1]
+			currencyArgs := strings.Split(strings.ToUpper(currencyArgString), ",")
+			currencies = currencyArgs
+		}
 
-	currencies := []string{"USD", "EUR"}
-	if coinId != "btc" && coinId != "bitcoin" {
-		currencies = append(currencies, "BTC")
-	}
-	if len(args) > 1 {
-		currencyArgString := args[1]
-		currencyArgs := strings.Split(strings.ToUpper(currencyArgString), ",")
-		currencies = currencyArgs
-	}
-
-	coin, err := getCoin(coinId)
-	if err != nil {
-		// User may have entered coin by symbol; attempt to find a matching id
-		coin, err := getCoinBySymbol(coinId)
-		if err != nil || coin == nil {
-			// Couldn't find a matching coin; probably incorrect input
-			fmt.Println("Error getting coin with ID of ", input)
-			return
+		coin, err := getCoin(coinId)
+		if err != nil {
+			// User may have entered coin by symbol; attempt to find a matching id
+			coin, err := getCoinBySymbol(coinId)
+			if err != nil || coin == nil {
+				// Couldn't find a matching coin; probably incorrect input
+				fmt.Println("Error getting coin with ID of ", input)
+				return
+			} else {
+				// Found matching coin
+				printCoinStats(coin)
+				printPrices(currencies, coin)
+			}
 		} else {
-			// Found matching coin
+			// User entered a valid coin id
 			printCoinStats(coin)
 			printPrices(currencies, coin)
 		}
-	} else {
-		// User entered a valid coin id
-		printCoinStats(coin)
-		printPrices(currencies, coin)
 	}
 }
 

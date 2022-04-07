@@ -90,6 +90,32 @@ func getCoinBySymbol(symbol string) (*geckoTypes.CoinsID, error) {
 	return coin, errors.New(errorMsg)
 }
 
+func printGlobalData(globalData map[string]map[string]float64) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
+
+	t.AppendHeader(table.Row{"Coin", "Market Cap Percentage", "Total Volume", "Total Market Cap"})
+
+	coinIds := []string{}
+	for key, val := range globalData {
+		if _, ok := val["TotalMarketCap"]; ok {
+			coinIds = append(coinIds, key)
+		}
+	}
+
+	for key, val := range globalData {
+		row := table.Row{key, val["MarketCapPercentage"], val["TotalVolume"], val["TotalMarketCap"]}
+		t.AppendRow(row)
+	}
+
+	t.SortBy([]table.SortBy{
+		{Name: "Market Cap Percentage", Mode: table.DscNumeric},
+	})
+
+	t.Render()
+}
+
 func printCoinStats(coin *geckoTypes.CoinsID) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
@@ -184,4 +210,43 @@ func getCurrencyFormatString(currency string) string{
 	default:
 		return "#,###.##"
 	}
+}
+
+func getGlobalData(client *gecko.Client) map[string]map[string]float64 {
+	// get global data
+	global, err := client.Global()
+	globalData := map[string]map[string]float64{}
+	if global != nil {
+
+		for key, val := range global.MarketCapPercentage {
+			if _, ok := globalData[key]; !ok {
+				globalData[key] = make(map[string]float64)
+			}
+			globalData[key]["MarketCapPercentage"] = val
+		}
+
+		for key, val := range global.TotalMarketCap {
+			if _, ok := globalData[key]; !ok {
+				globalData[key] = make(map[string]float64)
+			}
+			globalData[key]["TotalMarketCap"] = val
+		}
+
+		for key, val := range global.TotalVolume {
+			if _, ok := globalData[key]; !ok {
+				globalData[key] = make(map[string]float64)
+			}
+			globalData[key]["TotalVolume"] = val
+		}
+
+	} else {
+		fmt.Println(err)
+	}
+	return globalData
+}
+
+func getSimplePriceData(coinIds []string, currencies []string) (*map[string]map[string]float32, error) {
+	var geckoClient = gecko.NewClient(nil)
+	resp, err := geckoClient.SimplePrice(coinIds, currencies)
+	return resp, err
 }
